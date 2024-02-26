@@ -11,6 +11,7 @@ TIMEOUT = 5.0               # Socket timeout in seconds
 RECEPTION_TIMEOUT = 2.0     # Timeout for the reception event
 SIGNAL_PORT = 12346         # Port for sending calibration completion signal
 REQUIRED_IMAGE_COUNT = 20   # Number of image pairs required for calibration
+CALIBRATION_MODE = "STEREO" # Default calibration mode
 
 def create_server_socket(host, port, timeout):
     """
@@ -92,14 +93,17 @@ def save_image(image_data, prefix):
     :param prefix: The prefix indicating the camera side (LEFT or RIGHT).
     """
     global image_counts
+    directory = prefix if CALIBRATION_MODE == "STEREO" else "SINGLE"
+    
     if reception_event.is_set() and image_counts[prefix] < REQUIRED_IMAGE_COUNT:
         image_counts[prefix] += 1
-        filename = f"{prefix}/{prefix}_{image_counts[prefix]}.png"
+        filename = f"{directory}/{directory}_{image_counts[prefix]}.png"
         with open(filename, "wb") as image_file:
             image_file.write(image_data)
-        print(f"{prefix} image {image_counts[prefix]} saved.")
+        print(f"{directory} image {image_counts[prefix]} saved.")
     
-        if all(count >= REQUIRED_IMAGE_COUNT for count in image_counts.values()):
+        if (CALIBRATION_MODE == "STEREO" and all(count >= REQUIRED_IMAGE_COUNT for count in image_counts.values())) or \
+           (CALIBRATION_MODE == "SINGLE" and image_counts["SINGLE"] >= REQUIRED_IMAGE_COUNT):
             send_client_message(connection, "Calibrating...")
             reception_event.clear()
             trigger_calibration()
@@ -126,10 +130,16 @@ def process_image_data(connection, header):
 
 def trigger_calibration():
     """
-    Triggers the stereo calibration process.
+    Triggers the appropriate calibration process based on the CALIBRATION_MODE.
     """
-    print("Triggering stereo camera calibration...")
-    subprocess.run(["python", "StereoCalibration.py"])
+    if CALIBRATION_MODE == "SINGLE":
+        print("Triggering single camera calibration...")
+        subprocess.run(["python", "SingleCameraCalibration.py"])
+    elif CALIBRATION_MODE == "STEREO":
+        print("Triggering stereo camera calibration...")
+        subprocess.run(["python", "StereoCalibration.py"])
+    else:
+        print(f"Unknown CALIBRATION_MODE: {CALIBRATION_MODE}")
 
 def reset_image_counts():
     """
