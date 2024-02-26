@@ -1,6 +1,6 @@
-# Stereo Camera Calibration Server
+# Camera Calibration Server
 
-This repository provides a Python-based server for performing stereo camera calibration using images sent over TCP. It's designed to be camera-agnostic, allowing users to calibrate any stereo camera setup by sending pairs of images to the dedicated server.
+This repository provides a Python-based server for performing camera calibration, supporting both single and stereo camera setups. Users can calibrate their camera systems by sending images to the server over TCP, making it adaptable for various camera configurations.
 
 ## Prerequisites
 
@@ -8,80 +8,106 @@ Before running the server, ensure you have the following installed:
 - Python 3.x
 - OpenCV library (cv2)
 - NumPy
-- Socket and threading libraries (should be included with Python)
+- Socket and threading libraries (included with Python)
 
 ## Installation
 
-Clone this repository to your local machine using:
+Clone this repository to your local machine:
 
 ```bash
-git clone https://github.com/PrimoKu/stereo-camera-calibration-server.git
+git clone https://github.com/PrimoKu/camera-calibration-server.git
 ```
 
 Navigate to the cloned directory:
 
 ```bash
-cd stereo-camera-calibration-server
+cd camera-calibration-server
 ```
 
 No additional installation is needed as the scripts use standard Python libraries and OpenCV.
 
+## Server Configuration Parameters
+
+Before you start the server, you can configure the following parameters in `TcpServer.py` according to your setup:
+
+- `HOST`: The host IP address the server listens to. Default is '127.0.0.1'.
+- `PORT`: The port number the server listens on. Default is 12345.
+- `TIMEOUT`: The socket timeout in seconds. Default is 5.0.
+- `RECEPTION_TIMEOUT`: Timeout for the reception event in seconds. Default is 2.0.
+- `SIGNAL_PORT`: Port for sending the calibration completion signal. Default is 12346.
+- `REQUIRED_IMAGE_COUNT`: Number of image pairs required for stereo calibration or number of images for single calibration. Default is 20.
+- `CALIBRATION_MODE`: Determines whether the server performs single or stereo calibration. Default is "STEREO". Set to "SINGLE" for single camera calibration.
+
+## Calibration Mode Configuration
+
+The server is designed to support both single and stereo camera calibration modes. To select the desired mode, adjust the `CALIBRATION_MODE` variable within the `TcpServer.py` script:
+
+- Set `CALIBRATION_MODE = "SINGLE"` for single camera calibration.
+- Set `CALIBRATION_MODE = "STEREO"` for stereo camera calibration.
+
+This configuration must be done prior to starting the server for each calibration session.
+
 ## Usage
 
-To start the stereo camera calibration process, follow these steps:
+1. **Configure Calibration Mode**: Before starting the server, open `TcpServer.py` and set the `CALIBRATION_MODE` variable to either "SINGLE" or "STEREO" based on your calibration needs.
 
-1. **Start the Server**: Run the `TcpServer.py` script to start the server.
+2. **Start the Server**: Run the `TcpServer.py` script to initiate the server.
 
-   ```bash
-   python TcpServer.py
-   ```
+    ```bash
+    python TcpServer.py
+    ```
+    
+    The server will listen for image data on the specified port.
 
-   The server will start listening for image data on the specified port.
+3. **Send Image Data**: From your camera setup, send images to the server via TCP. Each image should include a header indicating its sequence, and for stereo calibration, specify left or right.
 
-2. **Send Image Data**: From your stereo camera setup, send pairs of images to the server using TCP. Each image should be sent with a header indicating its sequence and side (left or right).
-
-3. **Calibration Process**: Once the required number of image pairs is received, the server automatically triggers the `StereoCalibration.py` script to perform stereo calibration. The calibration results will be saved and a signal indicating completion will be sent back.
+4. **Calibration Process**: After receiving the necessary number of images, the server automatically triggers the corresponding calibration script (`SingleCameraCalibration.py` or `StereoCalibration.py`). The results are saved, and a completion signal is sent back.
 
 ## Scripts
 
-- **TcpServer.py**: Sets up a TCP server to receive images, saves them, and triggers the calibration process once enough data is collected.
+- **TcpServer.py**: Establishes a TCP server to receive images and initiates the calibration process based on the received data.
 
-- **StereoCalibration.py**: Performs individual camera calibrations followed by stereo calibration, saving the calibration parameters upon completion. This script can also be run independently using example images in the `LEFT` and `RIGHT` folders for testing purposes. Note that the quality of these example images is not ideal for a real calibration but serves for demonstration and testing.
+- **SingleCameraCalibration.py**: Performs calibration for a single camera. This script is invoked if the server is set to single camera mode.
 
-- **LoadCalibrationResults.py**: This script is used to load and display the calibration results stored in an `.npz` file. It outputs the RMS error, camera matrices, distortion coefficients, rotation and translation matrices, and the essential and fundamental matrices.
+- **StereoCalibration.py**: Conducts calibration for stereo cameras. This script performs individual camera calibrations and then stereo calibration, saving all relevant parameters.
+
+- **LoadCalibrationResults.py**: Loads and displays calibration results from an `.npz` file, detailing RMS error, camera matrices, distortion coefficients, and more.
 
 ## Test Calibration with Example Images
 
-The repository includes two folders, `LEFT` and `RIGHT`, containing example stereo images. These images are for testing purposes and are not of high quality for actual calibration. To test the calibration script with these images, simply run:
+The repository includes `LEFT` and `RIGHT` folders containing example images for stereo calibration and can be adapted for single camera calibration by placing images in a designated folder. These images are for testing and may not reflect the quality required for accurate calibration.
+
+To test the stereo calibration:
 
 ```bash
 python StereoCalibration.py
 ```
 
 The script will process the example images and output the calibration results, which can then be viewed using the `LoadCalibrationResults.py` script.
+For single camera calibration, ensure the script is adjusted to load images from the correct directory.
 
 ## Configuration
 
-- The number of image pairs required for calibration can be adjusted in `TcpServer.py` by modifying `required_image_count`.
-- Calibration square size and pattern can be adjusted in `StereoCalibration.py`.
+- Adjust `REQUIRED_IMAGE_COUNT` in `TcpServer.py` to change the number of images required for calibration.
+- Modify square size and pattern settings in the respective calibration scripts as needed.
 
 ## Outputs
 
-- The calibration parameters are saved in `stereo_calibration_parameters.npz` after the successful completion of the calibration process.
-- The server and calibration scripts provide console output to indicate their status and results.
+- Calibration parameters are stored in `stereo_calibration_parameters.npz` or a similar file for single calibration.
+- Scripts output status messages to the console, providing progress updates and results.
 
 ## Viewing Calibration Results
 
-To view the calibration results, run the `LoadCalibrationResults.py` script:
+To review the calibration results, execute:
 
 ```bash
 python LoadCalibrationResults.py
 ```
 
-Ensure that you update the script to point to the correct `.npz` file if it's not in the same directory or if it's named differently.
+Update the script to target the correct `.npz` file, especially if it's not located in the default directory or has a unique name.
 
 ## Troubleshooting
 
-- Ensure that the server and client are on the same network and the correct IP address and port are used.
-- Verify that the images are sent in the correct format and order.
-- Check console outputs for error messages and ensure all prerequisites are installed.
+- Ensure the server and client share the same network and have correct IP and port configurations.
+- Confirm the image format and sequence are correct when transmitting to the server.
+- Monitor the console for error messages and verify that all prerequisites are correctly installed.
