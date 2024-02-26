@@ -52,7 +52,7 @@ To start the stereo camera calibration process, follow these steps:
 
 ## Test Calibration with Example Images
 
-The repository includes two folders, "LEFT" and "RIGHT," containing example stereo images. These images are for testing purposes and are not of high quality for actual calibration. To test the calibration script with these images, simply run:
+The repository includes two folders, `LEFT` and `RIGHT`, containing example stereo images. These images are for testing purposes and are not of high quality for actual calibration. To test the calibration script with these images, simply run:
 
 ```bash
 python StereoCalibration.py
