@@ -46,7 +46,7 @@ To start the stereo camera calibration process, follow these steps:
 
 - **TcpServer.py**: Sets up a TCP server to receive images, saves them, and triggers the calibration process once enough data is collected.
 
-- **StereoCalibration.py**: Performs individual camera calibrations followed by stereo calibration, saving the calibration parameters upon completion. This script can also be run independently using example images in the "LEFT" and "RIGHT" folders for testing purposes. Note that the quality of these example images is not ideal for a real calibration but serves for demonstration and testing.
+- **StereoCalibration.py**: Performs individual camera calibrations followed by stereo calibration, saving the calibration parameters upon completion. This script can also be run independently using example images in the `LEFT` and `RIGHT` folders for testing purposes. Note that the quality of these example images is not ideal for a real calibration but serves for demonstration and testing.
 
 - **LoadCalibrationResults.py**: This script is used to load and display the calibration results stored in an `.npz` file. It outputs the RMS error, camera matrices, distortion coefficients, rotation and translation matrices, and the essential and fundamental matrices.
 
