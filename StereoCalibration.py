@@ -4,6 +4,8 @@ import numpy as np
 import socket
 import time
 
+from SingleCalibration import camera_calibration
+
 def find_image_files(base_path, prefix, count):
     """
     Find and return a list of image file paths with a given prefix and count.
@@ -57,7 +59,7 @@ def single_camera_calibration(images, square_size, pattern_size):
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     return ret, mtx, dist
 
-def stereo_calibration(left_images, right_images, square_size, pattern_size, mtx_left, dist_left, mtx_right, dist_right):
+def stereo_calibration(left_images, right_images, square_size, pattern_size):
     """
     Perform stereo camera calibration given the image sets from both cameras.
     
@@ -65,12 +67,17 @@ def stereo_calibration(left_images, right_images, square_size, pattern_size, mtx
     :param right_images: Image paths for the right camera.
     :param square_size: Size of the chessboard square.
     :param pattern_size: Chessboard pattern (width, height).
-    :param mtx_left: Camera matrix for the left camera.
-    :param dist_left: Distortion coefficients for the left camera.
-    :param mtx_right: Camera matrix for the right camera.
-    :param dist_right: Distortion coefficients for the right camera.
     :return: None
     """
+
+    # Calibrate the left camera
+    print("Calibrating left camera...")
+    _, mtx_left, dist_left = camera_calibration(left_images, square_size, pattern_size, "LEFT")
+
+    # Calibrate the right camera
+    print("Calibrating right camera...")
+    _, mtx_right, dist_right = camera_calibration(right_images, square_size, pattern_size, "RIGHT")
+
     # Prepare object points similar to the single camera calibration
     objp = np.zeros((pattern_size[0] * pattern_size[1], 3), np.float32)
     objp[:, :2] = np.mgrid[0:pattern_size[0], 0:pattern_size[1]].T.reshape(-1, 2) * square_size
@@ -107,7 +114,7 @@ def stereo_calibration(left_images, right_images, square_size, pattern_size, mtx
         objpoints, imgpoints_left, imgpoints_right, mtx_left, dist_left, mtx_right, dist_right,
         gray_left.shape[::-1], criteria=criteria, flags=cv2.CALIB_FIX_INTRINSIC)
 
-    np.savez('stereo_calibration_parameters.npz',
+    np.savez('stereo_calibration_data.npz',
         rms_error=ret,                              # The root mean square (RMS) re-projection error.
         left_camera_matrix=mtx_left,                # The camera matrix for the left camera.
         left_distortion_coefficients=dist_left,     # The distortion coefficients for the left camera.
@@ -125,7 +132,7 @@ def send_calibration_complete_signal():
     """
     Send a signal indicating the calibration process is complete.
     """
-    attempts = 5
+    attempts = 3
     for _ in range(attempts):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -150,14 +157,9 @@ def main():
 
     # Calibrate each camera and then perform stereo calibration
     if len(left_images) == image_num and len(right_images) == image_num:
-        print("Calibrating left camera...")
-        _, mtx_left, dist_left = single_camera_calibration(left_images, square_size, pattern_size)
-
-        print("Calibrating right camera...")
-        _, mtx_right, dist_right = single_camera_calibration(right_images, square_size, pattern_size)
 
         print("Performing stereo calibration...")
-        stereo_calibration(left_images, right_images, square_size, pattern_size, mtx_left, dist_left, mtx_right, dist_right)
+        stereo_calibration(left_images, right_images, square_size, pattern_size)
 
         send_calibration_complete_signal()
     else:
