@@ -118,8 +118,5 @@ def main():
     else:
         print("Not enough images for calibration. Found left: {}, right: {}.".format(len(left_images), len(right_images)))
 
-    print("Stereo Camera Calibration")
-    send_calibration_complete_signal()
-
 if __name__ == "__main__":
     main()
