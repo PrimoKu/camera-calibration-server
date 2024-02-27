@@ -25,40 +25,6 @@ def find_image_files(base_path, prefix, count):
             break
     return image_files
 
-def single_camera_calibration(images, square_size, pattern_size):
-    """
-    Perform calibration for a single camera using chessboard images.
-    
-    :param images: The list of image paths used for calibration.
-    :param square_size: The size of one square on the chessboard.
-    :param pattern_size: The number of squares on the chessboard (width, height).
-    :return: The camera matrix and distortion coefficients.
-    """
-    # Prepare object points based on the chessboard pattern and size
-    objp = np.zeros((pattern_size[0] * pattern_size[1], 3), np.float32)
-    objp[:, :2] = np.mgrid[0:pattern_size[0], 0:pattern_size[1]].T.reshape(-1, 2) * square_size
-
-    # Arrays to store object points and image points
-    objpoints = []  # 3d points in real world space
-    imgpoints = []  # 2d points in image plane
-
-    # Iterate over the images and find chessboard corners
-    for img_path in images:
-        img = cv2.imread(img_path)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
-
-        # If found, refine the corner positions and store the points
-        if ret:
-            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
-            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-            objpoints.append(objp)
-            imgpoints.append(corners2)
-
-    # Calibrate the camera and return the results
-    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
-    return ret, mtx, dist
-
 def stereo_calibration(left_images, right_images, square_size, pattern_size):
     """
     Perform stereo camera calibration given the image sets from both cameras.
