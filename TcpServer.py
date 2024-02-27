@@ -3,6 +3,9 @@ import sys
 import select
 import subprocess
 import threading
+import json
+
+from LoadCalibrationResults import load_camera_calibration_results, load_stereo_calibration_results
 
 # Server Configuration Parameters
 HOST = '127.0.0.1'          # Host IP
@@ -138,8 +141,23 @@ def trigger_calibration():
     elif CALIBRATION_MODE == "STEREO":
         print("Triggering stereo camera calibration...")
         subprocess.run(["python", "StereoCalibration.py"])
+        # send_calibration_data()
     else:
         print(f"Unknown CALIBRATION_MODE: {CALIBRATION_MODE}")
+
+def send_calibration_data(connection):
+    """
+    Loads and sends the stereo calibration data to the Unity client.
+    :param connection: The socket connection to the client.
+    """
+    print("Loading and sending calibration data to client...")
+    calibration_data = load_stereo_calibration_results('stereo_calibration_data.npz')
+    calibration_json = json.dumps(calibration_data)
+    # Mark the start and end of the calibration data transmission
+    start_marker = "CalibrationDataStart"
+    end_marker = "CalibrationDataEnd"
+    send_client_message(connection, f"{start_marker}\n{calibration_json}\n{end_marker}")
+    print("Calibration data sent to the client.")
 
 def reset_image_counts():
     """
@@ -165,6 +183,7 @@ def listen_for_calibration_complete():
                     if data:
                         print(data.decode())
                         send_client_message(connection, "Calibrated!")
+                        send_calibration_data(connection)
                         reception_event.set()
                         break
 
